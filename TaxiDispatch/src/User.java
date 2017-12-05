@@ -17,7 +17,10 @@ public class User {
     public int getId() {
         return id;
     }
+    public static void refreshIdGenerator() {
+        idGenerator = 0;
+    }
     public String toString() {
-        return "User id: " + id + ". Pick up: " + this.getSrc() + ". Dest: " + this.getDest();
+        return "User id: " + this.id + ". Pick up: " + this.getSrc() + ". Dest: " + this.getDest();
     }
 }

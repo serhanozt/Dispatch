@@ -3,44 +3,123 @@ import java.util.*;
 public class Main {
 
     static final int gridSize = 3;
+    static final int numReq = 10;
+    static long seed = 100;
+    static Random rand = new Random(seed);
 
-    public static void main(String[] args) {
-        VehicleManager vehicleManager = new VehicleManager(gridSize);
+    /**
+     * User priority: first come, first serve
+     * User request: comes in every time unit
+     * Match vehicle: Everytime user request comes, match the vehicle
+     * Idle time: (flag=0)vehicle doesn't move during idle time. (flag=1)vehicle move randomly
+     */
+
+    public static void alg1(int flag) {
+        VehicleManager vehicleManager = new VehicleManager(gridSize, rand);
         vehicleManager.init();
-        UserRequester userRequester = new UserRequester(gridSize);
-        Map<Position, Integer> busyVehicle = new HashMap<>();
+        UserRequester userRequester = new UserRequester(gridSize, rand);
         PriorityQueue<User> queue = new PriorityQueue<>(1, new Comparator<User>() {
             @Override
             public int compare(User o1, User o2) {
                 return Integer.compare(o1.getId(), o2.getId());
             }
         });
-        for (int i = 0; i < 10; i++) {
-            for (Position v : busyVehicle.keySet()) {
-                busyVehicle.put(v, busyVehicle.get(v) - 1);
-                if (busyVehicle.get(v) < 1) {
-                    vehicleManager.freeVehicle(v);
-                }
-            }
+
+        int[] waitToMatch = new int[numReq];
+        int[] waitToPickup = new int[numReq];
+        User[] users = new User[numReq];
+
+        int time = 0;
+        while (time < numReq) {
+            System.out.println("Time: " + time++);
+            vehicleManager.updateBusyVehicleDistance();
             vehicleManager.log();
             User newUser = new User(userRequester);
+            users[newUser.getId()] = newUser;
             queue.add(newUser);
             System.out.println("New user: " + newUser);
             List<User> pending = new ArrayList<>();
             while (!queue.isEmpty()) {
                 User user = queue.poll();
-                Position vehicle = vehicleManager.assignVehicle(user.getSrc());
-                if (vehicle != null) {
-                    System.out.println(user);
-                    System.out.println("Vehicle chosen: " + vehicle.toString());
-                    busyVehicle.put(vehicle, Position.dist(vehicle, user.getSrc()) + Position.dist(vehicle, user.getDest()));
-                } else {
+                Vehicle vehicle = alg1AssignVehicle(user, vehicleManager);
+                if (vehicle == null) {
+                    waitToMatch[user.getId()] += 1;
                     pending.add(user);
+                } else {
+                    waitToPickup[user.getId()] = Position.dist(vehicle.getPosition(), user.getSrc());
                 }
             }
+            if (flag == 1) {
+                vehicleManager.move();
+            }
             queue.addAll(pending);
-            vehicleManager.move();
+            vehicleManager.updateIdleTime();
             System.out.println();
         }
+        while (!queue.isEmpty() || vehicleManager.hasBusyVehicle()) {
+            System.out.println("Time: " + time++);
+            vehicleManager.updateBusyVehicleDistance();
+            vehicleManager.log();
+            List<User> pending = new ArrayList<>();
+            while (!queue.isEmpty()) {
+                User user = queue.poll();
+                Vehicle vehicle = alg1AssignVehicle(user, vehicleManager);
+                if (vehicle == null) {
+                    waitToMatch[user.getId()] += 1;
+                    pending.add(user);
+                } else {
+                    waitToPickup[user.getId()] = Position.dist(vehicle.getPosition(), user.getSrc());
+                }
+            }
+            if (flag == 1) {
+                vehicleManager.move();
+            }
+            queue.addAll(pending);
+            vehicleManager.updateIdleTime();
+            System.out.println();
+        }
+
+        int sumWaitToMatch = 0;
+        int sumWaitToPickup = 0;
+        int sumDeliverTime = 0;
+        int sumWholeTime = 0;
+        for (int i = 0; i < numReq; i++) {
+            System.out.println("User " + i);
+            System.out.println("Wait time to match: " + waitToMatch[i]);
+            System.out.println("Wait time to pickup: " + waitToPickup[i]);
+            int deliverTime = Position.dist(users[i].getSrc(), users[i].getDest());
+            System.out.println("Deliver time: " + deliverTime);
+            System.out.println("Whole time: " + (waitToMatch[i] + waitToPickup[i] + deliverTime));
+            sumWaitToMatch += waitToMatch[i];
+            sumWaitToPickup += waitToPickup[i];
+            sumDeliverTime += deliverTime;
+        }
+        sumWholeTime = sumWaitToMatch + sumWaitToPickup + sumDeliverTime;
+        System.out.println("All wait to match time: " + sumWaitToMatch);
+        System.out.println("All wait to pickup time: " + sumWaitToPickup);
+        System.out.println("All serving time: " + sumWholeTime);
+
+        vehicleManager.logIdleTime();
+        System.out.println();
+    }
+
+    private static Vehicle alg1AssignVehicle(User user, VehicleManager vehicleManager) {
+        Vehicle vehicle = vehicleManager.assignVehicle(user.getSrc());
+        if (vehicle != null) {
+            vehicle.updateDest(user.getDest());
+            System.out.println(user);
+            int totalDistance = Position.dist(vehicle.getPosition(), user.getSrc()) + Position.dist(user.getSrc(), user.getDest());
+            vehicleManager.addBusyVehicle(vehicle, totalDistance);
+            System.out.println("Vehicle chosen: " + vehicle + " Total Distance: " + totalDistance);
+        }
+        return vehicle;
+    }
+
+    public static void main(String[] args) {
+        System.out.println("Algorithm 1");
+        alg1(0);
+        User.refreshIdGenerator();
+        System.out.println("Algorithm 2");
+        alg1(1);
     }
 }
