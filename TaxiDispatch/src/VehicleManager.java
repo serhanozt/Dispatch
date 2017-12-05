@@ -6,18 +6,19 @@ public class VehicleManager {
     private int gridSize = 0;
     private Set<Position> availableVehicles;
     private Set<Position> unAvailableVehicles;
+    Random rand;
 
     public VehicleManager(int gridSize) {
         this.gridSize = gridSize;
         this.availableVehicles = new HashSet<>();
         this.unAvailableVehicles = new HashSet<>();
+        this.rand = new Random(System.currentTimeMillis());
     }
 
     public void init() {
-        Random rand = new Random(System.currentTimeMillis());
         for (int i = 0; i < gridSize; i++) {
             for (int j = 0; j < gridSize; j++) {
-                if(rand.nextInt(ratio) == 0) {
+                if(this.rand.nextInt(ratio) == 0) {
                     this.availableVehicles.add(new Position(i, j));
                 }
             }
@@ -26,9 +27,8 @@ public class VehicleManager {
 
     public void move() {
         for (Position v : this.availableVehicles) {
-            Random rand = new Random(System.currentTimeMillis());
             // 0: top, 1: right, 2: bottom, 3: left
-            int direction = rand.nextInt(4);
+            int direction = this.rand.nextInt(4);
             boolean move = true;
             for (int i = direction; i < direction + 4; i++) {
                 switch (i % 4) {
@@ -92,18 +92,14 @@ public class VehicleManager {
     }
 
     public void log() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Available:\n");
+        System.out.println("Available:");
         for (Position v : availableVehicles) {
-            sb.append(v.toString());
-            sb.append("\n");
+            System.out.println(v.toString());
         }
-        sb.append("UnAvailable:\n");
+        System.out.println("UnAvailable:");
         for (Position v: unAvailableVehicles) {
-            sb.append(v.toString());
-            sb.append("\n");
+            System.out.println(v.toString());
         }
-        System.out.println(sb);
     }
 
 }
