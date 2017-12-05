@@ -92,18 +92,14 @@ public class VehicleManager {
     }
 
     public void log() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Available:\n");
+        System.out.println("Available:");
         for (Position v : availableVehicles) {
-            sb.append(v.toString());
-            sb.append("\n");
+            System.out.println(v.toString());
         }
-        sb.append("UnAvailable:\n");
+        System.out.println("UnAvailable:");
         for (Position v: unAvailableVehicles) {
-            sb.append(v.toString());
-            sb.append("\n");
+            System.out.println(v.toString());
         }
-        System.out.println(sb);
     }
 
 }
