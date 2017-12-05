@@ -9,18 +9,18 @@ public class VehicleRequester {
 	 * @param mean
 	 * @return
 	 */
-	public List<Position> generatePoissonRandom(int numReq, double mean){
+	public List<Vehicle> generateVehicles(int numReq, double mean){
 		List<Integer> poissonDist = new ArrayList<Integer>();
-		List<Position> result = new ArrayList<Position>();
+		List<Vehicle> result = new ArrayList<Vehicle>();
 		Random random = new Random();		
 		// generate numReq random points
 		for(int i = 0; i < numReq; i ++){
-			getPoissonRandom(poissonDist, mean);
+			getPoissonRandomPoints(poissonDist, mean);
 		}
 
 		for(int i = poissonDist.size() -1; i >= 0; i --){
 			int index = random.nextInt(i + 1);
-			result.add(new Position(poissonDist.get(index),poissonDist.get(i)));
+			result.add(new Vehicle(new Position(poissonDist.get(index),poissonDist.get(i))));
 		}
 		return result;
 	}
@@ -29,7 +29,7 @@ public class VehicleRequester {
 	 * @param list
 	 * @param lambda
 	 */
-	public void getPoissonRandom(List<Integer> list, double lambda) {
+	public void getPoissonRandomPoints(List<Integer> list, double lambda) {
 		Random r = new Random();
 		double L = Math.exp(-lambda);
 		int k = 0;
@@ -39,10 +39,5 @@ public class VehicleRequester {
 			k++;
 		} while (p1 > L);
 		list.add(k -1);
-	}
-
-	public static void main(String[] args) {
-		VehicleRequester p1 = new VehicleRequester();
-		System.out.println(p1.generatePoissonRandom(100, 10));
 	}
 }
