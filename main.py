@@ -38,6 +38,8 @@ def simple_matching():
 	            distance = tempDistance
 	            vehicle_chosen = idx
 	    matched.append(user)
+	    print("user: " + str(user.curr_locat))
+	    print("vehicle: " + str(vehicles[vehicle_chosen].locat))
 	    vehicles[vehicle_chosen] = vehicles[vehicle_chosen]._replace(timer=Timer(distance, update_locat, [vehicle_chosen, user.dest_locat, distance]))
 	    vehicles[vehicle_chosen].timer.start()
 	    
