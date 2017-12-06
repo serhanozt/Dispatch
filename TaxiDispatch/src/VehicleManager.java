@@ -3,7 +3,7 @@ import javafx.geometry.Pos;
 import java.util.*;
 
 public class VehicleManager {
-    static final int ratio = 2;
+    public static final int ratio = 4;
 
     private int gridSize = 0;
     private Set<Vehicle> availableVehicles;
@@ -113,6 +113,48 @@ public class VehicleManager {
             this.unAvailableVehicles.add(vehicleChosen);
         }
         return vehicleChosen;
+    }
+
+    // deliver time: pick up time + drop off time
+    private Vehicle getMinDeliverTimeVehicle(User user) {
+        int minDeliverTime = Integer.MAX_VALUE;
+        Vehicle vehicleChosen = null;
+        for (Vehicle v : this.availableVehicles) {
+            int tmp = Position.dist(v.getPosition(), user.getSrc()) + Position.dist(user.getSrc(), user.getDest());
+            if (tmp < minDeliverTime) {
+                minDeliverTime = tmp;
+                vehicleChosen = v;
+            }
+        }
+        return vehicleChosen;
+    }
+
+    private Map.Entry<Vehicle, User> getMinDeliverTimeVehicle(List<User> users) {
+        int minDeliverTime = Integer.MAX_VALUE;
+        Vehicle vehicleChosen = null;
+        User userChosen = null;
+        for (User user : users) {
+            Vehicle v = this.getMinDeliverTimeVehicle(user);
+            if (v == null) {
+                return null;
+            }
+            int tmp = Position.dist(v.getPosition(), user.getSrc()) + Position.dist(user.getSrc(), user.getDest());
+            if (tmp < minDeliverTime) {
+                minDeliverTime = tmp;
+                vehicleChosen = v;
+                userChosen = user;
+            }
+        }
+        return new AbstractMap.SimpleEntry<Vehicle, User>(vehicleChosen, userChosen);
+    }
+
+    public Map.Entry<Vehicle, User> assignMinDeliverTimeVehicle(List<User> users) {
+        Map.Entry<Vehicle, User> tuple = getMinDeliverTimeVehicle(users);
+        if (tuple != null) {
+            this.availableVehicles.remove(tuple.getKey());
+            this.unAvailableVehicles.add(tuple.getKey());
+        }
+        return tuple;
     }
 
     public void freeVehicle(Vehicle vehicle) {
