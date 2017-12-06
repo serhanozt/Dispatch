@@ -39,6 +39,10 @@ public class Vehicle {
         return this.idleTime;
     }
 
+    public static void refreshIdGenerator() {
+        idGenerator = 0;
+    }
+
     public String toString() {
         return "Vehicle id: " + this.id + ". Position: " + this.position + ". Destination: " + this.destination;
     }

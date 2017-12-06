@@ -2,15 +2,16 @@ import java.util.*;
 
 public class Main {
 
-    static final int gridSize = 3;
-    static final int numReq = 10;
+    static final int gridSize = 5;
+    static final int numReq = 20;
+    static final int window = 5;
     static long seed = 100;
     static Random rand = new Random(seed);
 
     /**
      * User priority: first come, first serve
      * User request: comes in every time unit
-     * Match vehicle: Everytime user request comes, match the vehicle
+     * Match vehicle: Everytime user request comes, (flag=0/1)match the nearest vehicle, (flag=3) match the longest idle time vehicle
      * Idle time: (flag=0)vehicle doesn't move during idle time. (flag=1)vehicle move randomly
      */
 
@@ -41,7 +42,12 @@ public class Main {
             List<User> pending = new ArrayList<>();
             while (!queue.isEmpty()) {
                 User user = queue.poll();
-                Vehicle vehicle = alg1AssignVehicle(user, vehicleManager);
+                Vehicle vehicle = null;
+                if (flag == 3) {
+                    vehicle = alg2AssignVehicle(user, vehicleManager);
+                } else {
+                    vehicle = alg1AssignVehicle(user, vehicleManager);
+                }
                 if (vehicle == null) {
                     waitToMatch[user.getId()] += 1;
                     pending.add(user);
@@ -104,7 +110,7 @@ public class Main {
     }
 
     private static Vehicle alg1AssignVehicle(User user, VehicleManager vehicleManager) {
-        Vehicle vehicle = vehicleManager.assignVehicle(user.getSrc());
+        Vehicle vehicle = vehicleManager.assignNearestVehicle(user.getSrc());
         if (vehicle != null) {
             vehicle.updateDest(user.getDest());
             System.out.println(user);
@@ -115,11 +121,38 @@ public class Main {
         return vehicle;
     }
 
+    /**
+     * Assign the driver with longest idle time
+     */
+    private static Vehicle alg2AssignVehicle(User user, VehicleManager vehicleManager) {
+        Vehicle vehicle = vehicleManager.assignLongestIdleTimeVehicle();
+        if (vehicle != null) {
+            vehicle.updateDest(user.getDest());
+            System.out.println(user);
+            int totalDistance = Position.dist(vehicle.getPosition(), user.getSrc()) + Position.dist(user.getSrc(), user.getDest());
+            vehicleManager.addBusyVehicle(vehicle, totalDistance);
+            System.out.println("Vehicle chosen: " + vehicle + " Total Distance: " + totalDistance);
+        }
+        return vehicle;
+    }
+
+
     public static void main(String[] args) {
         System.out.println("Algorithm 1");
-        alg1(0);
-        User.refreshIdGenerator();
-        System.out.println("Algorithm 2");
         alg1(1);
+
+        User.refreshIdGenerator();
+        Vehicle.refreshIdGenerator();
+        System.out.println("Algorithm 2");
+        alg1(2);
+        System.out.println();
+
+        User.refreshIdGenerator();
+        Vehicle.refreshIdGenerator();
+        System.out.println("Algorithm 3");
+        alg1(3);
+        System.out.println();
+
+
     }
 }

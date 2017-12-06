@@ -3,7 +3,7 @@ import javafx.geometry.Pos;
 import java.util.*;
 
 public class VehicleManager {
-    static final int ratio = 5;
+    static final int ratio = 2;
 
     private int gridSize = 0;
     private Set<Vehicle> availableVehicles;
@@ -85,8 +85,29 @@ public class VehicleManager {
         return vehicleChosen;
     }
 
-    public Vehicle assignVehicle(Position userPos) {
+    public Vehicle assignNearestVehicle(Position userPos) {
         Vehicle vehicleChosen = getNearestVehicle(userPos);
+        if (vehicleChosen != null) {
+            this.availableVehicles.remove(vehicleChosen);
+            this.unAvailableVehicles.add(vehicleChosen);
+        }
+        return vehicleChosen;
+    }
+
+    private Vehicle getLongestIdleTimeVehicle() {
+        int maxIdleTime = -1;
+        Vehicle vehicleChosen = null;
+        for (Vehicle v : this.availableVehicles) {
+            if(v.getIdleTime() > maxIdleTime) {
+                vehicleChosen = v;
+                maxIdleTime = v.getIdleTime();
+            }
+        }
+        return vehicleChosen;
+    }
+
+    public Vehicle assignLongestIdleTimeVehicle() {
+        Vehicle vehicleChosen = getLongestIdleTimeVehicle();
         if (vehicleChosen != null) {
             this.availableVehicles.remove(vehicleChosen);
             this.unAvailableVehicles.add(vehicleChosen);
@@ -117,6 +138,7 @@ public class VehicleManager {
         this.busyVehicle.put(vehicle, distance);
     }
 
+
     public void updateIdleTime() {
         for (Vehicle vehicle: this.availableVehicles) {
             vehicle.incrementIdleTime();
@@ -124,9 +146,12 @@ public class VehicleManager {
     }
 
     public void logIdleTime() {
+        int sumIdleTime = 0;
         for (Vehicle vehicle: this.availableVehicles) {
             System.out.println("Vehicle " + vehicle.getId() + "'s idle time: " + vehicle.getIdleTime());
+            sumIdleTime += vehicle.getIdleTime();
         }
+        System.out.println("All vehicles' idle time is " + sumIdleTime);
     }
 
     public void log() {
