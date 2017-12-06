@@ -8,15 +8,16 @@ public class Main {
     static final int numReq = 10;
     static final int window = 5;
     static long seed = 100;
-    static Random rand = new Random(seed);
+    static final double lambda = 2;
 
     /**
      * User priority: first come, first serve
      * User request: comes in every time unit
-     * Match vehicle: Everytime user request comes, (flag=0/1)match the nearest vehicle, (flag=3) match the longest idle time vehicle
+     * Match vehicle: Everytime user request comes, (flag=0/1)match the nearest vehicle, (flag=2) match the longest idle time vehicle
      * Idle time: (flag=0)vehicle doesn't move during idle time. (flag=1)vehicle move randomly
      */
     public static void alg1(int flag) {
+        Random rand = new Random(seed);
         VehicleManager vehicleManager = new VehicleManager(gridSize, rand);
         vehicleManager.init();
         UserRequester userRequester = new UserRequester(gridSize, rand);
@@ -44,7 +45,7 @@ public class Main {
             while (!queue.isEmpty()) {
                 User user = queue.poll();
                 Vehicle vehicle = null;
-                if (flag == 3) {
+                if (flag == 2) {
                     vehicle = alg2AssignVehicle(user, vehicleManager);
                 } else {
                     vehicle = alg1AssignVehicle(user, vehicleManager);
@@ -70,7 +71,12 @@ public class Main {
             List<User> pending = new ArrayList<>();
             while (!queue.isEmpty()) {
                 User user = queue.poll();
-                Vehicle vehicle = alg1AssignVehicle(user, vehicleManager);
+                Vehicle vehicle = null;
+                if (flag == 2) {
+                    vehicle = alg2AssignVehicle(user, vehicleManager);
+                } else {
+                    vehicle = alg1AssignVehicle(user, vehicleManager);
+                }
                 if (vehicle == null) {
                     waitToMatch[user.getId()] += 1;
                     pending.add(user);
@@ -120,6 +126,7 @@ public class Main {
      * Match vehicle: Accumulate 5 users, then match one vehicle which has the min deliver time
      */
     public static void alg2() {
+        Random rand = new Random(seed);
         VehicleManager vehicleManager = new VehicleManager(gridSize, rand);
         vehicleManager.init();
         UserRequester userRequester = new UserRequester(gridSize, rand);
@@ -223,7 +230,77 @@ public class Main {
      * Vehicle request comes in poisson distribution
      */
     public static void alg3() {
+        Random rand = new Random(seed);
+        VehicleManager vehicleManager = new VehicleManager(gridSize, rand);
+        vehicleManager.init();
+        UserRequester userRequester = new UserRequester(gridSize, rand);
+        PriorityQueue<User> queue = new PriorityQueue<>(1, new Comparator<User>() {
+            @Override
+            public int compare(User o1, User o2) {
+                return Integer.compare(o1.getId(), o2.getId());
+            }
+        });
 
+        int[] waitToMatch = new int[numReq];
+        int[] waitToPickup = new int[numReq];
+        User[] users = new User[numReq];
+        int restUser = numReq;
+
+        int time = 0;
+        while (restUser > 0) {
+            System.out.println("Time: " + time++);
+            vehicleManager.updateBusyVehicleDistance();
+            vehicleManager.log();
+
+            int userDemand = PoissonRandom.getPoissonRandomPoints(lambda);
+            if (userDemand > restUser) {
+                userDemand = restUser;
+                restUser = 0;
+            } else {
+                restUser -= userDemand;
+            }
+            for (int i = 0; i < userDemand; i++) {
+                User newUser = new User(userRequester);
+                users[newUser.getId()] = newUser;
+                queue.add(newUser);
+                System.out.println("New user: " + newUser);
+            }
+            List<User> pending = new ArrayList<>();
+            while (!queue.isEmpty()) {
+                User user = queue.poll();
+                Vehicle vehicle = null;
+                vehicle = alg1AssignVehicle(user, vehicleManager);
+                if (vehicle == null) {
+                    waitToMatch[user.getId()] += 1;
+                    pending.add(user);
+                } else {
+                    waitToPickup[user.getId()] = Position.dist(vehicle.getPosition(), user.getSrc());
+                }
+            }
+            queue.addAll(pending);
+            vehicleManager.updateIdleTime();
+            System.out.println();
+        }
+        while (!queue.isEmpty() || vehicleManager.hasBusyVehicle()) {
+            System.out.println("Time: " + time++);
+            vehicleManager.updateBusyVehicleDistance();
+            vehicleManager.log();
+            List<User> pending = new ArrayList<>();
+            while (!queue.isEmpty()) {
+                User user = queue.poll();
+                Vehicle vehicle = alg1AssignVehicle(user, vehicleManager);
+                if (vehicle == null) {
+                    waitToMatch[user.getId()] += 1;
+                    pending.add(user);
+                } else {
+                    waitToPickup[user.getId()] = Position.dist(vehicle.getPosition(), user.getSrc());
+                }
+            }
+            queue.addAll(pending);
+            vehicleManager.updateIdleTime();
+            System.out.println();
+        }
+        eval(waitToMatch, waitToPickup, users, vehicleManager);
     }
 
     public static void eval(int[] waitToMatch, int[] waitToPickup, User[] users, VehicleManager vehicleManager) {
@@ -256,24 +333,34 @@ public class Main {
         System.out.println("Num of user request: " + numReq);
         System.out.println("Number of vehicles / Grid: " + VehicleManager.ratio);
         System.out.println();
-//        System.out.println("Algorithm 1");
-//        alg1(1);
-//
-//        User.refreshIdGenerator();
-//        Vehicle.refreshIdGenerator();
-//        System.out.println("Algorithm 2");
-//        alg1(2);
-//        System.out.println();
-//
-//        User.refreshIdGenerator();
-//        Vehicle.refreshIdGenerator();
-//        System.out.println("Algorithm 3");
-//        alg1(3);
-//        System.out.println();
 
+        User.refreshIdGenerator();
+        Vehicle.refreshIdGenerator();
+        System.out.println("Algorithm 1");
+        alg1(0);
+
+        User.refreshIdGenerator();
+        Vehicle.refreshIdGenerator();
+        System.out.println("Algorithm 2");
+        alg1(1);
+        System.out.println();
+
+        User.refreshIdGenerator();
+        Vehicle.refreshIdGenerator();
+        System.out.println("Algorithm 3");
+        alg1(2);
+        System.out.println();
+
+        User.refreshIdGenerator();
+        Vehicle.refreshIdGenerator();
         System.out.println("Algorithm 4");
         alg2();
         System.out.println();
 
+        User.refreshIdGenerator();
+        Vehicle.refreshIdGenerator();
+        System.out.println("Algorithm 5");
+        alg3();
+        System.out.println();
     }
 }
