@@ -1,8 +1,10 @@
 import java.util.Random;
 
 public class PoissonRandom {
+    static int seed = 10;
+
     public static int getPoissonRandomPoints(double lambda) {
-        Random r = new Random();
+        Random r = new Random(seed);
         double L = Math.exp(-lambda);
         int k = 0;
         double p1 = 1.0;

@@ -3,7 +3,7 @@ import javafx.geometry.Pos;
 import java.util.*;
 
 public class VehicleManager {
-    public static final int ratio = 4;
+    public static final int ratio = 2;
 
     private int gridSize = 0;
     private Set<Vehicle> availableVehicles;

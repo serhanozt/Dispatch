@@ -6,7 +6,7 @@ public class User {
     public User(UserRequester userRequester) {
         this.id = idGenerator;
         idGenerator += 1;
-        request = userRequester.generateRequest();
+        request = userRequester.generatePosition();
     }
     public Position getSrc() {
         return request[0];

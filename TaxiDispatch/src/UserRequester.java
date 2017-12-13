@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 public class UserRequester {
@@ -9,7 +11,7 @@ public class UserRequester {
         this.rand = rand;
     }
 
-    public Position[] generateRequest() {
+    public Position[] generatePosition() {
 //        Random rand = new Random(System.currentTimeMillis());
         Position src = new Position(rand.nextInt(gridSize), rand.nextInt(gridSize));
         Position dest = new Position(rand.nextInt(gridSize), rand.nextInt(gridSize));
@@ -18,5 +20,13 @@ public class UserRequester {
         }
         Position[] req = {src, dest};
         return req;
+    }
+
+    public int getUserDemand(double lambda) {
+        return PoissonRandom.getPoissonRandomPoints(lambda);
+    }
+
+    public int getUserDemand() {
+        return 1;
     }
 }

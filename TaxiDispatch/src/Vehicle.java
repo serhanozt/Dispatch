@@ -28,7 +28,11 @@ public class Vehicle {
     }
 
     public void updateDest(Position destination) {
-        this.destination = destination;
+        if(this.destination == null) {
+            this.destination = new Position(destination.row, destination.col);
+        } else {
+            this.destination.update(destination.row, destination.col);
+        }
     }
 
     public void incrementIdleTime() {
