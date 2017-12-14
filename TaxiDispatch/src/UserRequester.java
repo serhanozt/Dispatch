@@ -6,9 +6,9 @@ public class UserRequester {
     private int gridSize;
     Random rand;
 
-    public UserRequester(int gridSize, Random rand) {
+    public UserRequester(int gridSize, long seed) {
         this.gridSize = gridSize;
-        this.rand = rand;
+        this.rand = new Random(seed);
     }
 
     public Position[] generatePosition() {

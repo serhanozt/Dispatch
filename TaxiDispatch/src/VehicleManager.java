@@ -3,33 +3,43 @@ import javafx.geometry.Pos;
 import java.util.*;
 
 public class VehicleManager {
-    public static final int ratio = 2;
 
     private int gridSize = 0;
+    private int numOfVehicles = 0;
     private Set<Vehicle> availableVehicles;
     private Set<Vehicle> unAvailableVehicles;
     private Map<Vehicle, Integer> busyVehicle;
     private Random rand;
 
-    public VehicleManager(int gridSize, Random rand) {
+    public VehicleManager(int gridSize, long seed, int numOfVehicles) {
         this.gridSize = gridSize;
+        this.numOfVehicles = numOfVehicles;
+        this.rand = new Random(seed);
         this.availableVehicles = new HashSet<>();
         this.unAvailableVehicles = new HashSet<>();
         this.busyVehicle = new HashMap<>();
-        this.rand = rand;
     }
 
     public void init() {
+        int ratio = gridSize * gridSize / numOfVehicles;
+        ratio = ratio == 0 ? 1 : ratio;
+        int restNum = numOfVehicles;
+        int count = gridSize * gridSize;
         while (this.availableVehicles.isEmpty()) {
-//            Random rand = new Random(System.currentTimeMillis());
             for (int i = 0; i < gridSize; i++) {
                 for (int j = 0; j < gridSize; j++) {
-                    if (rand.nextInt(ratio) == 0) {
+                    if (restNum > 0 && (rand.nextInt(ratio) == 0 || count <= restNum)) {
                         this.availableVehicles.add(new Vehicle(new Position(i, j)));
+                        restNum -= 1;
                     }
+                    count -= 1;
                 }
             }
         }
+    }
+
+    public int getNumOfVehicles() {
+        return this.numOfVehicles;
     }
 
     public void move() {
@@ -194,6 +204,14 @@ public class VehicleManager {
             sumIdleTime += vehicle.getIdleTime();
         }
         System.out.println("All vehicles' idle time is " + sumIdleTime);
+    }
+
+    public Integer[] getIdleTimes() {
+        Integer[] idleTimes = new Integer[numOfVehicles];
+        for (Vehicle vehicle: this.availableVehicles) {
+            idleTimes[vehicle.getId()] = vehicle.getIdleTime();
+        }
+        return idleTimes;
     }
 
     public void log() {
