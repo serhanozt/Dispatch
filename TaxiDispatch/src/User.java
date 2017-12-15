@@ -5,13 +5,14 @@ public class User {
     private Position[] request;
     private int waitToMatch = 0;
     private int waitToPickup = 0;
-    private int tripTime = 0;
+    private int tripDistance = 0;
+    private int serveTime = 0;
 
     public User(UserRequester userRequester) {
         this.id = idGenerator;
         idGenerator += 1;
         request = userRequester.generatePosition();
-        tripTime = Position.dist(request[0], request[1]);
+        tripDistance = Position.dist(request[0], request[1]);
     }
     public Position getSrc() {
         return request[0];
@@ -25,7 +26,11 @@ public class User {
     }
 
     public int getServeTime() {
-        return waitToMatch + waitToPickup + tripTime;
+        return serveTime;
+    }
+
+    public void setTripTime(int tripTime) {
+        serveTime += waitToMatch + waitToPickup + tripTime;
     }
 
     public void incrementWaitToMatch() {
@@ -44,8 +49,8 @@ public class User {
         return waitToPickup;
     }
 
-    public int getTripTime() {
-        return tripTime;
+    public int getTripDistance() {
+        return tripDistance;
     }
 
     public static void refreshIdGenerator() {

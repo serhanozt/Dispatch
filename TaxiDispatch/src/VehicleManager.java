@@ -6,15 +6,17 @@ public class VehicleManager {
 
     private int gridSize = 0;
     private int numOfVehicles = 0;
+    private int trafficCongestion = 1;
     private Set<Vehicle> availableVehicles;
     private Set<Vehicle> unAvailableVehicles;
     private Map<Vehicle, Integer> busyVehicle;
     private Random rand;
 
-    public VehicleManager(int gridSize, long seed, int numOfVehicles) {
+    public VehicleManager(int gridSize, long seed, int numOfVehicles, int trafficCongestion) {
         this.gridSize = gridSize;
         this.numOfVehicles = numOfVehicles;
         this.rand = new Random(seed);
+        this.trafficCongestion = trafficCongestion;
         this.availableVehicles = new HashSet<>();
         this.unAvailableVehicles = new HashSet<>();
         this.busyVehicle = new HashMap<>();
@@ -40,6 +42,10 @@ public class VehicleManager {
 
     public int getNumOfVehicles() {
         return this.numOfVehicles;
+    }
+
+    public int getTrafficCongestion() {
+        return this.trafficCongestion;
     }
 
     public void move() {

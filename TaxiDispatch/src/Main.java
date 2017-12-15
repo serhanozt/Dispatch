@@ -13,7 +13,7 @@ public class Main {
      * Match vehicle: Everytime user request comes, (flag=0/1)match the nearest vehicle, (flag=2) match the longest idle time vehicle
      * Idle time: (flag=0)vehicle doesn't move during idle time. (flag=1)vehicle move randomly
      */
-    public static List<User> dispatch(int flag, int gridSize, int numReq, int window, long seed, double lambda, VehicleManager vehicleManager) {
+    public static List<User> dispatch(int flag, int gridSize, int numReq, int window, long seed, double lambda, int trafficCongestion, VehicleManager vehicleManager) {
         vehicleManager.init();
         UserRequester userRequester = new UserRequester(gridSize, seed);
         PriorityQueue<User> queue = new PriorityQueue<>(1, new Comparator<User>() {
@@ -30,9 +30,10 @@ public class Main {
         while (restUser > 0 || !queue.isEmpty() || vehicleManager.hasBusyVehicle()) {
             System.out.println("Time: " + time++);
             vehicleManager.updateBusyVehicleDistance();
-//            vehicleManager.log();
+            vehicleManager.log();
 
             int userDemand = userRequester.getUserDemand(lambda);
+//            int userDemand = 1;
             if (userDemand > restUser) {
                 userDemand = restUser;
                 restUser = 0;
@@ -75,16 +76,20 @@ public class Main {
             }
             System.out.println();
         }
+
+//        printInfo(Arrays.asList(users), vehicleManager, flag, gridSize, numReq, window, seed, lambda, trafficCongestion);
         return Arrays.asList(users);
     }
 
     private static void match(User user, Vehicle vehicle, VehicleManager vehicleManager) {
         vehicle.updateDest(user.getDest());
         System.out.println(user);
-        int totalDistance = Position.dist(vehicle.getPosition(), user.getSrc()) + user.getTripTime();
-        vehicleManager.addBusyVehicle(vehicle, totalDistance);
-        System.out.println("Vehicle chosen: " + vehicle + " Total Distance: " + totalDistance);
-        user.setWaitToPickup(Position.dist(vehicle.getPosition(), user.getSrc()));
+        int totalDistance = Position.dist(vehicle.getPosition(), user.getSrc()) + user.getTripDistance();
+        int tripTime = totalDistance * vehicleManager.getTrafficCongestion();
+        vehicleManager.addBusyVehicle(vehicle, tripTime);
+        System.out.println("Vehicle chosen: " + vehicle + " Total Distance: " + totalDistance + "Trip time: " + tripTime);
+        user.setWaitToPickup(Position.dist(vehicle.getPosition(), user.getSrc()) * vehicleManager.getTrafficCongestion());
+        user.setTripTime(tripTime);
     }
 
     private static boolean assignNearestVehicle(Queue<User> queue, VehicleManager vehicleManager) {
@@ -171,6 +176,30 @@ public class Main {
         return Math.sqrt(getVariance(list));
     }
 
+    public static void printInfo(List<User> users, VehicleManager vehicleManager, int flag, int gridSize, int numReq, int window, long seed, double lambda, int trafficCongestion) {
+        System.out.println("Algorithm: " + flag);
+        System.out.println("Grid size: " + gridSize);
+        System.out.println("Num req: " + numReq);
+        System.out.println("Window: " + window);
+        System.out.println("lambda: " + lambda);
+        System.out.println("Traffic congestion: " + trafficCongestion);
+        System.out.println("User information");
+        for (User user : users) {
+            System.out.println(user);
+            System.out.println("Wait to match: " + user.getWaitToMatch());
+            System.out.println("Wait to pickup: " + user.getWaitToPickup());
+            System.out.println("Trip Distance: " + user.getTripDistance());
+            System.out.println("Serve time: " + user.getServeTime());
+        }
+        System.out.println("Vehicle information");
+        Integer[] idleTimes = vehicleManager.getIdleTimes();
+        for (int i = 0; i < idleTimes.length; i++) {
+            System.out.println("Vehicle " + i);
+            System.out.println("Idle time: " + idleTimes[i]);
+        }
+        System.out.println();
+    }
+
     public static List<Double> prepareData(List<User> users, VehicleManager vehicleManager) {
         List<Double> data = new ArrayList<>();
         List<Integer> list = new ArrayList<>();
@@ -220,31 +249,31 @@ public class Main {
      * @param numOfVehicles
      * @return {max, mean, min wait to match time; max, mean, min wait to pickup time; max, mean, min serve time; max, mean, min idle time}
      */
-    public static List<List<Double>> experiment(int gridSize, int numReq, int window, long seed, double lambda, int numOfVehicles) {
+    public static List<List<Double>> experiment(int gridSize, int numReq, int window, long seed, double lambda, int numOfVehicles, int trafficCongestion) {
         List<List<Double>> result = new ArrayList<>();
 
-        VehicleManager vehicleManager = new VehicleManager(gridSize, seed, numOfVehicles);
+        VehicleManager vehicleManager = new VehicleManager(gridSize, seed, numOfVehicles, trafficCongestion);
         User.refreshIdGenerator();
         Vehicle.refreshIdGenerator();
-        List<User> userResult = dispatch(1, gridSize, numReq, window, seed, lambda, vehicleManager);
+        List<User> userResult = dispatch(1, gridSize, numReq, window, seed, lambda, trafficCongestion, vehicleManager);
         result.add(prepareData(userResult, vehicleManager));
 
-        vehicleManager = new VehicleManager(gridSize, seed, numOfVehicles);
+        vehicleManager = new VehicleManager(gridSize, seed, numOfVehicles, trafficCongestion);
         User.refreshIdGenerator();
         Vehicle.refreshIdGenerator();
-        userResult = dispatch(2, gridSize, numReq, window, seed, lambda, vehicleManager);
+        userResult = dispatch(2, gridSize, numReq, window, seed, lambda, trafficCongestion, vehicleManager);
         result.add(prepareData(userResult, vehicleManager));
 
-        vehicleManager = new VehicleManager(gridSize, seed, numOfVehicles);
+        vehicleManager = new VehicleManager(gridSize, seed, numOfVehicles, trafficCongestion);
         User.refreshIdGenerator();
         Vehicle.refreshIdGenerator();
-        userResult = dispatch(3, gridSize, numReq, window, seed, lambda, vehicleManager);
+        userResult = dispatch(3, gridSize, numReq, window, seed, lambda, trafficCongestion, vehicleManager);
         result.add(prepareData(userResult, vehicleManager));
 
-        vehicleManager = new VehicleManager(gridSize, seed, numOfVehicles);
+        vehicleManager = new VehicleManager(gridSize, seed, numOfVehicles, trafficCongestion);
         User.refreshIdGenerator();
         Vehicle.refreshIdGenerator();
-        userResult = dispatch(4, gridSize, numReq, window, seed, lambda, vehicleManager);
+        userResult = dispatch(4, gridSize, numReq, window, seed, lambda, trafficCongestion, vehicleManager);
         result.add(prepareData(userResult, vehicleManager));
 
         return result;
@@ -269,52 +298,60 @@ public class Main {
     }
 
 
-    public static void eval(int gridSize, int numReq, int window, long seed, double lambda, int numOfVehicles, PrintWriter pw) {
+    public static void eval(int gridSize, int numReq, int window, long seed, double lambda, int numOfVehicles, int trafficCongestion, PrintWriter pw) {
         String row = "max Wait to match,avg Wait to match,min Wait to match,std Wait to match,max Wait to pickup,avg Wait to pickup,min Wait to pickup,std Wait to pickup,max Serve time,avg Serve time,min Serve time,std Serve time,max Vehicle idle time,avg Vehicle idle time,min Vehicle idle time,std Vehicle idle time";
         String[] column = {"Algorithm 1", "Algorithm 2", "Algorithm 3", "Algorithm 4"};
         if (gridSize == 0) {
             pw.println("Different GridSize");
             for (gridSize = 20; gridSize <= 70; gridSize += 50) {
-                List<List<Double>> result = experiment(gridSize, numReq, window, seed, lambda, numOfVehicles);
-                String xLabel = "GridSize:" + gridSize + " NumUser:" + numReq + " NumVeh:" + numOfVehicles + " Window:" + window + " lambda:" + lambda + ",";
+                List<List<Double>> result = experiment(gridSize, numReq, window, seed, lambda, numOfVehicles, trafficCongestion);
+                String xLabel = "GridSize:" + gridSize + " NumUser:" + numReq + " NumVeh:" + numOfVehicles + " Window:" + window + " lambda:" + lambda + " Traffic congestion:" + trafficCongestion + ",";
                 xLabel += row;
                 plot(xLabel, column, result, pw);
             }
         } else if (numReq == 0) {
             pw.println("Different number of user requests");
             for (numReq = 40; numReq <= 120; numReq+=40) {
-                List<List<Double>> result = experiment(gridSize, numReq, window, seed, lambda, numOfVehicles);
-                String xLabel = "GridSize:" + gridSize + " NumUser:" + numReq + " NumVeh:" + numOfVehicles + " Window:" + window + " lambda:" + lambda + ",";
+                List<List<Double>> result = experiment(gridSize, numReq, window, seed, lambda, numOfVehicles, trafficCongestion);
+                String xLabel = "GridSize:" + gridSize + " NumUser:" + numReq + " NumVeh:" + numOfVehicles + " Window:" + window + " lambda:" + lambda + " Traffic congestion:" + trafficCongestion + ",";
                 xLabel += row;
                 plot(xLabel, column, result, pw);
             }
         } else if (window == 0) {
             pw.println("Different window");
             for (window = 4; window <= 10; window += 2) {
-                List<List<Double>> result = experiment(gridSize, numReq, window, seed, lambda, numOfVehicles);
-                String xLabel = "GridSize:" + gridSize + " NumUser:" + numReq + " NumVeh:" + numOfVehicles + " Window:" + window + " lambda:" + lambda + ",";
+                List<List<Double>> result = experiment(gridSize, numReq, window, seed, lambda, numOfVehicles, trafficCongestion);
+                String xLabel = "GridSize:" + gridSize + " NumUser:" + numReq + " NumVeh:" + numOfVehicles + " Window:" + window + " lambda:" + lambda + " Traffic congestion:" + trafficCongestion + ",";
                 xLabel += row;
                 plot(xLabel, column, result, pw);
             }
         } else if (lambda == 0) {
             pw.println("Different lambda");
             for (lambda = 4; lambda <= 10; lambda += 3) {
-                List<List<Double>> result = experiment(gridSize, numReq, window, seed, lambda, numOfVehicles);
-                String xLabel = "GridSize:" + gridSize + " NumUser:" + numReq + " NumVeh:" + numOfVehicles + " Window:" + window + " lambda:" + lambda + ",";
+                List<List<Double>> result = experiment(gridSize, numReq, window, seed, lambda, numOfVehicles, trafficCongestion);
+                String xLabel = "GridSize:" + gridSize + " NumUser:" + numReq + " NumVeh:" + numOfVehicles + " Window:" + window + " lambda:" + lambda + " Traffic congestion:" + trafficCongestion + ",";
                 xLabel += row;
                 plot(xLabel, column, result, pw);
             }
         } else if (numOfVehicles == 0) {
             pw.println("Different number of vehicles");
             for (numOfVehicles = 50; numOfVehicles <= 80; numOfVehicles += 15) {
-                List<List<Double>> result = experiment(gridSize, numReq, window, seed, lambda, numOfVehicles);
-                String xLabel = "GridSize:" + gridSize + " NumUser:" + numReq + " NumVeh:" + numOfVehicles + " Window:" + window + " lambda:" + lambda + ",";
+                List<List<Double>> result = experiment(gridSize, numReq, window, seed, lambda, numOfVehicles, trafficCongestion);
+                String xLabel = "GridSize:" + gridSize + " NumUser:" + numReq + " NumVeh:" + numOfVehicles + " Window:" + window + " lambda:" + lambda + " Traffic congestion:" + trafficCongestion + ",";
+                xLabel += row;
+                plot(xLabel, column, result, pw);
+            }
+        } else if (trafficCongestion == 0) {
+            pw.println("Different level of traffic congestion");
+            for (trafficCongestion = 2; trafficCongestion <= 5; trafficCongestion += 3) {
+                List<List<Double>> result = experiment(gridSize, numReq, window, seed, lambda, numOfVehicles, trafficCongestion);
+                String xLabel = "GridSize:" + gridSize + " NumUser:" + numReq + " NumVeh:" + numOfVehicles + " Window:" + window + " lambda:" + lambda + " Traffic congestion:" + trafficCongestion + ",";
                 xLabel += row;
                 plot(xLabel, column, result, pw);
             }
         } else {
-            List<List<Double>> result = experiment(gridSize, numReq, window, seed, lambda, numOfVehicles);
-            String xLabel = "GridSize:" + gridSize + " NumUser:" + numReq + " NumVeh:" + numOfVehicles + " Window:" + window + " lambda:" + lambda + ",";
+            List<List<Double>> result = experiment(gridSize, numReq, window, seed, lambda, numOfVehicles, trafficCongestion);
+            String xLabel = "GridSize:" + gridSize + " NumUser:" + numReq + " NumVeh:" + numOfVehicles + " Window:" + window + " lambda:" + lambda + " Traffic congestion:" + trafficCongestion + ",";
             xLabel += row;
             plot(xLabel, column, result, pw);
         }
@@ -330,13 +367,16 @@ public class Main {
         int window = 3;
         int seed = 100;
         int lambda = 10;
+        int trafficCongestion = 1;
         int numOfVehicles = 70;
-        eval(gridSize, numReq, window, seed, lambda, numOfVehicles, pw);
-        eval(0, numReq, window, seed, lambda, numOfVehicles, pw);
-        eval(gridSize, 0, window, seed, lambda, numOfVehicles, pw);
-        eval(gridSize, numReq, 0, seed, lambda, numOfVehicles, pw);
-        eval(gridSize, numReq, window, seed, 0, numOfVehicles, pw);
-        eval(gridSize, numReq, window, seed, lambda, 0, pw);
+
+        eval(gridSize, numReq, window, seed, lambda, numOfVehicles, trafficCongestion, pw);
+        eval(0, numReq, window, seed, lambda, numOfVehicles, trafficCongestion, pw);
+        eval(gridSize, 0, window, seed, lambda, numOfVehicles, trafficCongestion, pw);
+        eval(gridSize, numReq, 0, seed, lambda, numOfVehicles, trafficCongestion, pw);
+        eval(gridSize, numReq, window, seed, 0, numOfVehicles, trafficCongestion, pw);
+        eval(gridSize, numReq, window, seed, lambda, 0, trafficCongestion, pw);
+        eval(gridSize, numReq, window, seed, lambda, numOfVehicles, 0, pw);
         pw.close();
 
     }
